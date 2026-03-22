@@ -1,116 +1,98 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-const colors = {
- bg: "#fdf6f0",
- card: "#ffffff",
- accent: "#e8cfc1",
- text: "#5a4a42",
- button: "#c89f94"
-};
-
-const verseMap = {
- "Jeremiah 29:11":
- "For I know the plans I have for you, declares the Lord, plans to prosper you and not to harm you, plans to give you hope and a future."
-};
-
-export default function App() {
- const [step,setStep]=useState(1);
- const [name,setName]=useState("");
- const [age,setAge]=useState("");
- const [openVerse,setOpenVerse]=useState("");
+export default function App(){
  const [prayers,setPrayers]=useState([]);
  const [newPrayer,setNewPrayer]=useState("");
- const [mood,setMood]=useState("");
 
- const verse="Jeremiah 29:11";
+ useEffect(()=>{
+  const saved = localStorage.getItem("prayers");
+  if(saved) setPrayers(JSON.parse(saved));
+ },[]);
 
- const cardStyle={
-  background:colors.card,
-  padding:20,
-  borderRadius:16,
-  boxShadow:"0 4px 10px rgba(0,0,0,0.05)",
-  marginBottom:20
+ useEffect(()=>{
+  localStorage.setItem("prayers", JSON.stringify(prayers));
+ },[prayers]);
+
+ const addPrayer=()=>{
+  if(!newPrayer.trim())return;
+  setPrayers([...prayers,{
+    text:newPrayer,
+    answered:false,
+    date:null,
+    rotate:(Math.random()*6-3)+"deg",
+    top:Math.random()*70+"%",
+    left:Math.random()*70+"%"
+  }]);
+  setNewPrayer("");
  };
 
- if(step===1){
-  return <div style={{background:colors.bg,minHeight:"100vh",padding:40}}>
-   <div style={cardStyle}>
-    <h2 style={{color:colors.text}}>Welcome 🤍</h2>
-    <input placeholder="Name" value={name} onChange={e=>setName(e.target.value)}
-     style={{padding:10,width:"100%",marginTop:10}}/>
-    <button onClick={()=>setStep(2)}
-     style={{marginTop:15,background:colors.button,color:"#fff",padding:10,border:"none",borderRadius:10}}>
-     Next
-    </button>
-   </div>
-  </div>;
- }
-
- if(step===2){
-  return <div style={{background:colors.bg,minHeight:"100vh",padding:40}}>
-   <div style={cardStyle}>
-    <h2 style={{color:colors.text}}>Hi {name}</h2>
-    <input placeholder="Age" value={age} onChange={e=>setAge(e.target.value)}
-     style={{padding:10,width:"100%",marginTop:10}}/>
-    <button onClick={()=>setStep(3)}
-     style={{marginTop:15,background:colors.button,color:"#fff",padding:10,border:"none",borderRadius:10}}>
-     Enter
-    </button>
-   </div>
-  </div>;
- }
+ const toggleAnswered=(i)=>{
+  const copy=[...prayers];
+  if(!copy[i].answered){
+    copy[i].answered=true;
+    copy[i].date=new Date().toLocaleDateString();
+  }
+  setPrayers(copy);
+ };
 
  return (
-  <div style={{background:colors.bg,minHeight:"100vh",padding:30,fontFamily:"Arial"}}>
+ <div style={{padding:30}}>
 
-   <div style={cardStyle}>
-    <h1 style={{color:colors.text}}>Bible Plan</h1>
+  <h1>Prayer Board</h1>
 
-    <button onClick={()=>setOpenVerse(openVerse===verse?"":verse)}
-     style={{color:colors.button,background:"none",border:"none",fontSize:18,cursor:"pointer"}}>
-     {verse}
-    </button>
+  <input value={newPrayer} onChange={e=>setNewPrayer(e.target.value)}/>
+  <button onClick={addPrayer}>Add</button>
 
-    {openVerse===verse && <p style={{marginTop:10,color:colors.text}}>
-      {verseMap[verse]}
-    </p>}
-   </div>
+  <div style={{
+    height:400,
+    borderRadius:20,
+    position:"relative",
+    background:"#d6a77a",
+    backgroundImage:"radial-gradient(#c18b5c 1px, transparent 1px)",
+    backgroundSize:"10px 10px"
+  }}>
 
-   <div style={cardStyle}>
-    <h2 style={{color:colors.text}}>Mood Check</h2>
-    {["😞","😐","🙂","😄"].map(m=>(
-      <button key={m} onClick={()=>setMood(m)} style={{marginRight:10,fontSize:20}}>{m}</button>
-    ))}
-    {mood && <p style={{marginTop:10}}>You selected: {mood}</p>}
-   </div>
+   {prayers.map((p,i)=>(
+    <div key={i} onClick={()=>toggleAnswered(i)} style={{
+      position:"absolute",
+      top:p.top,
+      left:p.left,
+      transform:`rotate(${p.rotate})`,
+      background:"#fff3b0",
+      padding:12,
+      borderRadius:8,
+      cursor:"pointer"
+    }}>
 
-   <div style={cardStyle}>
-    <h2 style={{color:colors.text}}>Prayer Board</h2>
-    <input value={newPrayer} onChange={e=>setNewPrayer(e.target.value)}
-     style={{padding:10,width:"70%"}}/>
-    <button onClick={()=>{
-      if(!newPrayer.trim())return;
-      setPrayers([...prayers,newPrayer]);
-      setNewPrayer("");
-    }} style={{marginLeft:10,padding:10,background:colors.button,color:"#fff",border:"none",borderRadius:10}}>
-      Add
-    </button>
+      {/* push pin */}
+      <div style={{
+        width:10,height:10,background:"red",borderRadius:"50%",
+        position:"absolute",top:-5,left:"50%",transform:"translateX(-50%)"
+      }}/>
 
-    <div style={{marginTop:15}}>
-      {prayers.map((p,i)=>(
-        <div key={i} style={{
-          background:colors.accent,
-          padding:12,
-          marginBottom:10,
-          borderRadius:12
-        }}>
-          {p}
-        </div>
-      ))}
+      {/* checkmark */}
+      {p.answered && (
+        <div style={{
+          position:"absolute",
+          top:4,
+          right:6,
+          color:"green",
+          fontWeight:"bold"
+        }}>✓</div>
+      )}
+
+      <div>{p.text}</div>
+
+      {!p.answered && <small>tap to mark answered</small>}
+
+      {p.answered && <small>answered {p.date}</small>}
+
     </div>
-   </div>
+   ))}
 
   </div>
+
+ </div>
  );
 }
